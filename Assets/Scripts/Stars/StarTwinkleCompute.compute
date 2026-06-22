@@ -1,0 +1,33 @@
+#pragma kernel CSMain
+
+ 
+struct GPU_Star
+{
+    float2 position;
+    float brightness;
+    float speed;
+    float phase;
+};
+
+
+RWStructuredBuffer<GPU_Star> stars;
+float time;
+float dt;
+int starCount;
+
+[numthreads(256, 1, 1)]
+void CSMain(uint id : SV_DispatchThreadID)
+{
+    if (id >= starCount)
+        return;
+    
+    GPU_Star s = stars[id];
+    
+    float twinkleAmount = sin(time * 0.5f * s.speed + s.phase) * 0.5f + 0.5f;
+    s.brightness = lerp(0.1, 1.0, twinkleAmount);
+    
+    //s.position.y += s.speed * dt;
+    
+    stars[id] = s;
+
+}

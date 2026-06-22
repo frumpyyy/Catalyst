@@ -5,12 +5,6 @@ using UnityEngine.Rendering.Universal;
 
 public class Atom : MonoBehaviour
 {
-    //event that is called when a fusion happens successfully, notifies levelmanager to update how many reactions left
-    public static event Action m_atomFused;
-
-    public bool m_reacting = false;
-
-    public AtomState m_atomState { get; private set; }
 
     [SerializeField] private SpriteRenderer _spRenderer;
     [SerializeField] private Rigidbody2D _rb;
@@ -18,7 +12,6 @@ public class Atom : MonoBehaviour
     [SerializeField] private Color _defaultColour = Color.white;
     [SerializeField] private Color _hitColour = Color.purple;
     [SerializeField] private Color _fusedColour = Color.red;
-    [SerializeField] private float _forceRequiredToFuse = 2.0f;
     [SerializeField] private float _explosionRadius = 2.0f;
     [SerializeField] private float _atomExplosionScale = 4.0f;
     [SerializeField] private GameObject _fusionParticleEffect;
@@ -26,12 +19,17 @@ public class Atom : MonoBehaviour
     [SerializeField] private float _defaultGlowIntensity = 1.0f;
     [SerializeField] private float _hitGlowIntensity = 2.0f;
     [SerializeField] private float _FuseGlowIntensity = 3.0f;
-    [SerializeField] private float _restitution = 0.8f;
     [SerializeField] private Vector3 baseScale;
 
     private Collider2D[] closeAtoms = new Collider2D[32]; //prealloc
 
     private AtomState? _pendingState;
+
+    public static event Action m_atomFused;
+
+    public bool m_reacting = false;
+    public AtomState m_atomState { get; private set; }
+
 
     void Start()
     {
