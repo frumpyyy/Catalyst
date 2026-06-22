@@ -27,23 +27,34 @@ public class Atom : MonoBehaviour
     [SerializeField] private float _hitGlowIntensity = 2.0f;
     [SerializeField] private float _FuseGlowIntensity = 3.0f;
     [SerializeField] private float _restitution = 0.8f;
+    [SerializeField] private Vector3 baseScale;
 
+    private Collider2D[] closeAtoms = new Collider2D[32]; //prealloc
 
+    private AtomState? _pendingState;
 
     void Start()
     {
         m_atomState = AtomState.Default;
-        //self register to the game manager
         _rb = GetComponent<Rigidbody2D>();
-
+        baseScale = transform.localScale;
         LevelManager.m_instance.atomRegister();
+    }
+
+    private void FixedUpdate()
+    {
+        if (_pendingState.HasValue)
+        {
+            UpdateAtomState(_pendingState.Value);
+            _pendingState = null;
+        }
     }
 
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
 
-        if (collision.gameObject.TryGetComponent<Catalyst>(out _)) //out _ as we dont need catalyst information 
+        if (collision.gameObject.TryGetComponent<Catalyst>(out _))
         {
             if (LevelManager.m_instance.isLastAtom())
             {
@@ -56,8 +67,6 @@ public class Atom : MonoBehaviour
             UpdateAtomState(AtomState.Hit);
             return;
         }
-
-
 
         if (!collision.gameObject.TryGetComponent<Atom>(out Atom other)) return;
 
@@ -100,7 +109,7 @@ public class Atom : MonoBehaviour
                 _spRenderer.color = _hitColour;
                 _glow.color = _hitColour;
                 _glow.intensity = _hitGlowIntensity;
-                transform.localScale *= 1.2f;
+                transform.localScale = baseScale * 1.2f;
                 break;
 
 
@@ -108,7 +117,7 @@ public class Atom : MonoBehaviour
                 _spRenderer.color = _fusedColour;
                 _glow.color = _fusedColour;
                 _glow.intensity = _FuseGlowIntensity;
-                transform.localScale *= 1.4f;
+                transform.localScale = baseScale * 1.4f;
                 break;
         }
     }
@@ -174,9 +183,10 @@ public class Atom : MonoBehaviour
     {
         Instantiate(_explosionParticleEffect, transform.position, Quaternion.identity);
 
-        Collider2D[] closeAtoms = Physics2D.OverlapCircleAll(transform.position, _explosionRadius);
+        //been looking into mem efficieny here and am using non alloc to avoid runtime mem allocation (pre allocated buffer), was previously using overlapcircleall but noticing lag spike when querying objects, hence the switch to non alloc
+        int collisions = Physics2D.OverlapCircleNonAlloc(transform.position, _explosionRadius, closeAtoms);
 
-        for (int i = 0; i < closeAtoms.Length; ++i)
+        for (int i = 0; i < collisions; ++i)
         {
             Collider2D collider = closeAtoms[i];
             if (collider.TryGetComponent<Rigidbody2D>(out Rigidbody2D rb))
@@ -189,7 +199,7 @@ public class Atom : MonoBehaviour
             }
 
             if (collider.TryGetComponent<Atom>(out Atom other))
-                other.HitFromExplosion();
+                other._pendingState = AtomState.Hit;
         }
 
 
@@ -197,15 +207,5 @@ public class Atom : MonoBehaviour
         Destroy(gameObject);
     }
 
-    public void HitFromExplosion()
-    {
-        StartCoroutine(DelayedStateChange());
-    }
 
-    private IEnumerator DelayedStateChange()
-    {
-        yield return new WaitForFixedUpdate();
-        if (m_atomState == AtomState.Default)
-            UpdateAtomState(AtomState.Hit);
-    }
 }

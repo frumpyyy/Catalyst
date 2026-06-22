@@ -63,8 +63,11 @@ public class UIManager : MonoBehaviour
         bool gameWon = newState == GameManager.LevelState.Won;
         bool gameLost = newState == GameManager.LevelState.Lost;
 
-        _ammoUI.SetActive(false);
-        HideComboUI();
+        if (gameWon || gameLost)
+        {
+            _ammoUI.SetActive(false);
+            HideComboUI();
+        }
         _winUI.SetActive(gameWon);
         _loseUI.SetActive(gameLost);
     }
@@ -88,7 +91,7 @@ public class UIManager : MonoBehaviour
     public void UpdateComboChain(int chain)
     {
 
-        if (chain == 0)
+        if (chain <= 1)
         {
             HideComboUI();
             return;
