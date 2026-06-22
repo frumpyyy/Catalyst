@@ -1,3 +1,5 @@
+using System.Collections;
+using TMPro;
 using UnityEngine;
 
 public class UIManager : MonoBehaviour
@@ -6,6 +8,11 @@ public class UIManager : MonoBehaviour
 
     [SerializeField] private GameObject winUI;
     [SerializeField] private GameObject loseUI;
+
+    [SerializeField] private GameObject comboUI;
+    [SerializeField] private CanvasGroup comboCanvasGroup;
+    [SerializeField] private TextMeshProUGUI comboText;
+
 
     /// <summary>
     /// checking for a duplicate uimanager, if there is one that isnt the current manager then delete the current manager
@@ -40,9 +47,72 @@ public class UIManager : MonoBehaviour
 
     public void NextLevel()
     {
-
         GameManager.m_instance.LoadNext();
     }
 
+    public void UpdateComboChain(int chain)
+    {
+        if (chain == 0)
+        {
+            StopAllCoroutines();
+            return;
+        }
+
+
+        comboUI.SetActive(true);
+
+        string cText = chain switch
+        {
+            < 3 => $"COMBO x{chain}",
+            < 6 => $"GREAT! x{chain}",
+            < 9 => $"AWESOME! x{chain}",
+            < 12 => $"INCREDIBLE! x{chain}",
+            < 15 => $"UNSTOPPABLE! x{chain}",
+            _ => $"CATALYTIC! x{chain}"
+        };
+
+        comboText.text = $"{cText}";
+
+        StopAllCoroutines();
+
+        StartCoroutine(ComboAnimation());
+    }
+
+    private IEnumerator ComboAnimation()
+    {
+        RectTransform rectTransform = comboUI.GetComponent<RectTransform>();
+
+        comboCanvasGroup.alpha = 1.0f;
+        comboCanvasGroup.interactable = false;
+        comboCanvasGroup.blocksRaycasts = false;
+
+        rectTransform.localScale = Vector3.zero;
+
+        Vector2 startPosition = rectTransform.anchoredPosition;
+        Vector2 endPosition = startPosition + Vector2.up * 50.0f;
+
+        float timeOffset = 0.0f;
+
+        while (timeOffset < 1.0f)
+        {
+            timeOffset += Time.deltaTime * 2.0f;
+
+            float easedEffect = Mathf.Sin(timeOffset * Mathf.PI * 0.5f);
+
+            float overShoot = Mathf.Sin(timeOffset * Mathf.PI);
+            rectTransform.localScale = Vector3.Lerp(Vector3.zero, Vector3.one * 1.15f, overShoot);
+
+            rectTransform.anchoredPosition = Vector2.Lerp(startPosition, endPosition, easedEffect);
+
+            yield return null;
+
+        }
+
+
+        comboUI.SetActive(false);
+        comboCanvasGroup.alpha = 0.0f;
+
+
+    }
 
 }
