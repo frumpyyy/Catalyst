@@ -62,7 +62,6 @@ public class StarTwinkle : MonoBehaviour
 
         starTwinkleCS.Dispatch(starKernel, starGroups, 1, 1);
 
-        Debug.Log("drawing");
         starMat.SetBuffer("stars", starTwinkleBuffer);
         starMat.SetPass(0);
 
