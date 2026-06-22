@@ -6,12 +6,18 @@ public class UIManager : MonoBehaviour
 {
     public static UIManager m_instance { get; private set; }
 
-    [SerializeField] private GameObject winUI;
-    [SerializeField] private GameObject loseUI;
+    [SerializeField] private GameObject _winUI;
+    [SerializeField] private GameObject _loseUI;
+    [SerializeField] private GameObject _ammoUI;
+    [SerializeField] private TextMeshProUGUI _ammoText;
 
-    [SerializeField] private GameObject comboUI;
-    [SerializeField] private CanvasGroup comboCanvasGroup;
-    [SerializeField] private TextMeshProUGUI comboText;
+    [SerializeField] private GameObject _comboUI;
+    [SerializeField] private CanvasGroup _comboCanvasGroup;
+    [SerializeField] private TextMeshProUGUI _comboText;
+    [SerializeField] private ParticleSystem _comboParticles;
+
+
+    private Coroutine _comboRoutine;
 
 
     /// <summary>
@@ -25,18 +31,42 @@ public class UIManager : MonoBehaviour
             return;
         }
         m_instance = this;
+
+
+        _comboUI.SetActive(true);
+        _comboCanvasGroup.interactable = false;
+        _comboCanvasGroup.blocksRaycasts = false;
+        HideComboUI();
+
+    }
+
+    private void HideComboUI()
+    {
+        _comboCanvasGroup.alpha = 0f;
+        _comboParticles.Stop();
+        _comboParticles.Clear();
+    }
+
+    private void OnEnable()
+    {
+        LevelManager.OnShot += UpdateAmmoCounter;
+    }
+
+    private void OnDisable()
+    {
+        LevelManager.OnShot -= UpdateAmmoCounter;
     }
 
 
     public void StateChanged(GameManager.LevelState newState)
     {
-        //i was going to do a switch statement here however in the off chance that UI is incorrectly triggered the switch statement would only turn on
-        //the win or lose ui not turning the opposite off, meaning code would have to be duplicated within the switch to perform this funcitonality.
         bool gameWon = newState == GameManager.LevelState.Won;
         bool gameLost = newState == GameManager.LevelState.Lost;
 
-        winUI.SetActive(gameWon);
-        loseUI.SetActive(gameLost);
+        _ammoUI.SetActive(false);
+        HideComboUI();
+        _winUI.SetActive(gameWon);
+        _loseUI.SetActive(gameLost);
     }
 
     //functions for UI buttons to restart lvl and skip to next
@@ -50,16 +80,21 @@ public class UIManager : MonoBehaviour
         GameManager.m_instance.LoadNext();
     }
 
+    public void UpdateAmmoCounter(int ammo)
+    {
+        _ammoText.text = $"Ammo: {ammo}";
+    }
+
     public void UpdateComboChain(int chain)
     {
+
         if (chain == 0)
         {
-            StopAllCoroutines();
+            HideComboUI();
             return;
         }
 
-
-        comboUI.SetActive(true);
+        _comboUI.SetActive(true);
 
         string cText = chain switch
         {
@@ -71,47 +106,46 @@ public class UIManager : MonoBehaviour
             _ => $"CATALYTIC! x{chain}"
         };
 
-        comboText.text = $"{cText}";
+        _comboText.text = $"{cText}";
+        _comboParticles.Play();
 
-        StopAllCoroutines();
+        if (_comboRoutine != null) StopCoroutine(_comboRoutine);
 
-        StartCoroutine(ComboAnimation());
+
+        _comboRoutine = StartCoroutine(ComboAnimation());
     }
 
     private IEnumerator ComboAnimation()
     {
-        RectTransform rectTransform = comboUI.GetComponent<RectTransform>();
+        RectTransform rectTransform = _comboText.GetComponent<RectTransform>();
 
-        comboCanvasGroup.alpha = 1.0f;
-        comboCanvasGroup.interactable = false;
-        comboCanvasGroup.blocksRaycasts = false;
+        _comboCanvasGroup.alpha = 1.0f;
 
         rectTransform.localScale = Vector3.zero;
 
         Vector2 startPosition = rectTransform.anchoredPosition;
-        Vector2 endPosition = startPosition + Vector2.up * 50.0f;
+        Vector2 endPosition = startPosition + Vector2.up * 15.0f;
 
+        float duration = 0.4f;
         float timeOffset = 0.0f;
 
-        while (timeOffset < 1.0f)
+        while (timeOffset < duration)
         {
-            timeOffset += Time.deltaTime * 2.0f;
+            timeOffset += Time.deltaTime;
 
-            float easedEffect = Mathf.Sin(timeOffset * Mathf.PI * 0.5f);
+            float n = timeOffset / duration;
 
-            float overShoot = Mathf.Sin(timeOffset * Mathf.PI);
-            rectTransform.localScale = Vector3.Lerp(Vector3.zero, Vector3.one * 1.15f, overShoot);
+            float move = Mathf.SmoothStep(0f, 1.0f, n);
 
-            rectTransform.anchoredPosition = Vector2.Lerp(startPosition, endPosition, easedEffect);
+            float scale = Mathf.Lerp(0.8f, 1.0f, move);
+
+            rectTransform.localScale = Vector3.one * scale;
+
+            rectTransform.anchoredPosition = Vector2.Lerp(startPosition, endPosition, move);
 
             yield return null;
 
         }
-
-
-        comboUI.SetActive(false);
-        comboCanvasGroup.alpha = 0.0f;
-
 
     }
 

@@ -8,6 +8,11 @@ public class CatalystPlayer : MonoBehaviour
     [SerializeField] private LineRenderer _fireTraj;
     [SerializeField] private int _fireLineSegments = 30;
     [SerializeField] private float _fireLinePredictedTimestep = 0.016f;
+    [SerializeField] private float _launcherDragSpeed = 8.0f;
+
+    private bool _Dragging = false;
+    private TutorialManager _tutorial;
+
 
     private Camera _camera;
 
@@ -15,6 +20,11 @@ public class CatalystPlayer : MonoBehaviour
     private void Awake()
     {
         _camera = Camera.main;
+    }
+
+    private void Start()
+    {
+        _tutorial = FindAnyObjectByType<TutorialManager>();
     }
 
     private void Update()
@@ -28,10 +38,24 @@ public class CatalystPlayer : MonoBehaviour
         DrawLaunchTrajectory(launchDirection);
 
         if (Mouse.current.leftButton.wasPressedThisFrame)
+        {
             TryLaunch(launchDirection);
+            _tutorial?.UserFired();
+        }
 
-        if (Mouse.current.rightButton.wasPressedThisFrame)
-            transform.position = mouseWorldPosition;
+        if (Mouse.current.rightButton.isPressed)
+        {
+            transform.position = Vector2.Lerp(transform.position, mouseWorldPosition, Time.deltaTime * _launcherDragSpeed);
+
+            if (!_Dragging)
+            {
+                _Dragging = true;
+                _tutorial?.UserMoved();
+            }
+
+        }
+        else
+            _Dragging = false;
     }
 
 

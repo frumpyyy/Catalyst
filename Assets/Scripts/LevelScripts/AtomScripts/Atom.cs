@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 
 public class Atom : MonoBehaviour
 {
@@ -38,32 +39,36 @@ public class Atom : MonoBehaviour
         LevelManager.m_instance.atomRegister();
     }
 
-    private void OnTriggerEnter2D(Collider2D collision)
-    {
-        if (collision.gameObject.CompareTag("Wall"))
-        {
-            Vector2 collisionNormal = ((Vector2)transform.position - collision.ClosestPoint(transform.position)).normalized;
-
-            _rb.linearVelocity = Vector2.Reflect(_rb.linearVelocity, collisionNormal) * _restitution;
-        }
-    }
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
 
         if (collision.gameObject.TryGetComponent<Catalyst>(out _)) //out _ as we dont need catalyst information 
         {
+            if (LevelManager.m_instance.isLastAtom())
+            {
+                Explode();
+                return;
+            }
+
             if (m_atomState != AtomState.Default) return;
+
             UpdateAtomState(AtomState.Hit);
             return;
         }
 
+
+
         if (!collision.gameObject.TryGetComponent<Atom>(out Atom other)) return;
 
+        if (other.m_reacting) return;
 
-        //float velocityImpact = collision.relativeVelocity.magnitude;
-        //if (velocityImpact <= _forceRequiredToFuse)
-        //    return;
+        if (m_atomState == AtomState.Fused && !m_reacting)
+        {
+            m_reacting = true;
+            Explode();
+            return;
+        }
 
         AtomCollision(other);
 
@@ -76,6 +81,7 @@ public class Atom : MonoBehaviour
     /// <param name="state">Atom state the owned state is being set to.</param>
     private void UpdateAtomState(AtomState state)
     {
+        if (m_atomState == state) return;
         m_atomState = state;
         UpdateAtomVisuals();
     }
@@ -115,11 +121,13 @@ public class Atom : MonoBehaviour
     /// <param name="other">Atom being collided with.</param>
     private void AtomCollision(Atom other)
     {
+
         if (m_reacting) return;
 
         if (m_atomState == AtomState.Hit)
         {
             m_reacting = true;
+            other.m_reacting = true;
             other.DestroyForFusion();
             Fuse();
             return;
@@ -128,22 +136,9 @@ public class Atom : MonoBehaviour
         if (other.m_atomState == AtomState.Hit)
         {
             other.m_reacting = true;
+            m_reacting = true;
             DestroyForFusion();
             other.Fuse();
-            return;
-        }
-
-        if (m_atomState == AtomState.Fused)
-        {
-            m_reacting = true;
-            Explode();
-            return;
-        }
-
-        if (other.m_atomState == AtomState.Fused)
-        {
-            m_reacting = true;
-            other.Explode();
             return;
         }
 
@@ -155,7 +150,7 @@ public class Atom : MonoBehaviour
     private void Fuse()
     {
         UpdateAtomState(AtomState.Fused);
-        ResetReaction();
+        StartCoroutine(ResetReaction());
     }
 
     private IEnumerator ResetReaction()
@@ -191,14 +186,26 @@ public class Atom : MonoBehaviour
 
                 rb.AddForce(forceDirection * _atomExplosionScale, ForceMode2D.Impulse);
 
-                if (collider.gameObject.TryGetComponent<Atom>(out Atom other))
-                    other.UpdateAtomState(AtomState.Hit);
-
             }
+
+            if (collider.TryGetComponent<Atom>(out Atom other))
+                other.HitFromExplosion();
         }
+
 
         m_atomFused?.Invoke();
         Destroy(gameObject);
     }
 
+    public void HitFromExplosion()
+    {
+        StartCoroutine(DelayedStateChange());
+    }
+
+    private IEnumerator DelayedStateChange()
+    {
+        yield return new WaitForFixedUpdate();
+        if (m_atomState == AtomState.Default)
+            UpdateAtomState(AtomState.Hit);
+    }
 }

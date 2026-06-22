@@ -70,9 +70,15 @@ public class LevelManager : MonoBehaviour
 
         _chainMultiResetCoroutine = StartCoroutine(ResetChainMultiplier());
 
-        if (_atomCount == 0)
+        if (_atomCount <= 0)
+        {
             StartCoroutine(WinScreen());
+            return;
+        }
+
     }
+
+    public bool isLastAtom() => _atomCount == 1;
 
     private IEnumerator ResetChainMultiplier()
     {

@@ -109,7 +109,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Atom
   m_reacting: 0
   _spRenderer: {fileID: 9188269914981301987}
-  _rb: {fileID: 0}
+  _rb: {fileID: 7994327705551494378}
   _glow: {fileID: 1373716965094835947}
   _defaultColour: {r: 1, g: 1, b: 1, a: 1}
   _hitColour: {r: 0.627451, g: 0.1254902, b: 0.9411765, a: 1}
@@ -139,7 +139,7 @@ Rigidbody2D:
   m_LinearDamping: 0.05
   m_AngularDamping: 0.05
   m_GravityScale: 0
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 6200000, guid: 12954a6211bccc44eaf2cff7739110f0, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0

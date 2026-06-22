@@ -46,7 +46,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CatalystPlayer
   _catalystPrefab: {fileID: 5808812384126387686, guid: 83ba0aaea8e99094791435f9eb7bcb29, type: 3}
-  _fireForce: 4
+  _fireForce: 5
   _fireTraj: {fileID: 8706763424144464462}
   _fireLineSegments: 20
   _fireLinePredictedTimestep: 0.016

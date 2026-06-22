@@ -7,7 +7,12 @@ public class GameManager : MonoBehaviour
     public static GameManager m_instance { get; private set; }
 
     //level state enum to describe the current state of the game, won, lost, in play
-    public enum LevelState { InPlay, Won, Lost };
+    public enum LevelState
+    {
+        InPlay,
+        Won,
+        Lost
+    };
 
     //current state var used mainly for UI and scene loading, for example when game is won, ui will be notified from update game state func and show win screen
     public LevelState m_gameState { get; private set; }
